@@ -1,0 +1,817 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shift Sales Reporter</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0a0a0a;
+  color: #ccc;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 20px 12px;
+}
+
+#app {
+  width: 100%;
+  max-width: 480px;
+  min-height: 600px;
+  background: #0f0f0f;
+  border-radius: 16px;
+  border: 1px solid #1a1a2e;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+}
+
+.screen { display: none; padding: 24px; animation: fadeIn 0.25s ease; }
+.screen.active { display: block; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+h1 { font-size: 1.3rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+h2 { font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 12px; }
+.subtitle { font-size: 0.82rem; color: #666; margin-bottom: 20px; }
+
+label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #888;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: #16213e;
+  border: 1px solid #1a1a2e;
+  border-radius: 8px;
+  color: #eee;
+  font-size: 0.92rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  margin-bottom: 14px;
+}
+
+input:focus, select:focus, textarea:focus { border-color: #e94560; }
+textarea { resize: vertical; min-height: 60px; }
+select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+}
+
+.button:active { transform: scale(0.97); }
+
+.button-primary { background: #e94560; color: #fff; }
+.button-primary:hover { background: #d63b55; }
+.button-secondary { background: #16213e; color: #ccc; border: 1px solid #1a1a2e; }
+.button-secondary:hover { background: #1a1a2e; }
+.button-danger { background: #dc2626; color: #fff; }
+.button-danger:hover { background: #b91c1c; }
+.button-success { background: #059669; color: #fff; }
+.button-success:hover { background: #047857; }
+.button-small { padding: 7px 14px; font-size: 0.82rem; width: auto; }
+
+.card {
+  background: #1a1a2e;
+  border: 1px solid rgba(233,69,96,0.1);
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.gear-button {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: none;
+  border: 1px solid #1a1a2e;
+  border-radius: 8px;
+  color: #666;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  transition: all 0.15s;
+}
+
+.gear-button:hover { color: #e94560; border-color: #e94560; }
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: #1a1a2e;
+  border-bottom: 1px solid rgba(233,69,96,0.15);
+}
+
+.header-bar .chatter-name { font-weight: 700; color: #fff; font-size: 0.95rem; }
+.header-bar .shift-timer { font-size: 1.05rem; font-weight: 700; color: #e94560; font-variant-numeric: tabular-nums; }
+
+.clock-out-button {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.clock-out-button:hover { background: #b91c1c; }
+
+.tab-nav {
+  display: flex;
+  background: #16213e;
+  border-bottom: 1px solid #1a1a2e;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #666;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.tab-button.active { color: #e94560; border-bottom-color: #e94560; }
+.tab-button:hover { color: #999; }
+
+.tab-content { display: none; padding: 20px; animation: fadeIn 0.2s ease; }
+.tab-content.active { display: block; }
+
+.log-list { max-height: 240px; overflow-y: auto; margin-top: 14px; }
+.log-list::-webkit-scrollbar { width: 4px; }
+.log-list::-webkit-scrollbar-thumb { background: #e94560; border-radius: 4px; }
+.log-list::-webkit-scrollbar-track { background: transparent; }
+
+.log-item {
+  background: #16213e;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-size: 0.82rem;
+  border-left: 3px solid #e94560;
+}
+
+.log-item .log-time { color: #666; font-size: 0.72rem; margin-bottom: 2px; }
+.log-item .log-main { color: #ddd; }
+.log-item .log-detail { color: #888; font-size: 0.75rem; margin-top: 2px; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat-card {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.stat-card.wide { grid-column: 1 / -1; }
+.stat-value { font-size: 1.4rem; font-weight: 700; color: #fff; }
+.stat-value.accent { color: #e94560; }
+.stat-label { font-size: 0.7rem; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+
+.progress-bar-container {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 14px;
+  margin-top: 10px;
+}
+
+.progress-bar-track {
+  width: 100%;
+  height: 10px;
+  background: #0f0f0f;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e94560, #ff6b81);
+  border-radius: 5px;
+  transition: width 0.4s ease;
+  width: 0%;
+}
+
+.progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; }
+.progress-label .current { color: #e94560; font-weight: 700; }
+.progress-label .target { color: #666; }
+
+.input-row { display: flex; gap: 10px; }
+.input-row > * { flex: 1; }
+
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: #1a1a2e;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border: 1px solid #e94560;
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 100;
+  white-space: nowrap;
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { border-color: #dc2626; }
+.toast.success { border-color: #059669; }
+
+.empty-state { text-align: center; padding: 30px; color: #444; font-size: 0.85rem; }
+
+.number-input-group { display: flex; align-items: center; gap: 0; margin-bottom: 14px; }
+.number-input-group input { border-radius: 0; margin-bottom: 0; text-align: center; flex: 1; }
+.number-input-group button {
+  background: #e94560;
+  color: #fff;
+  border: none;
+  width: 38px;
+  height: 40px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.number-input-group button:first-child { border-radius: 8px 0 0 8px; }
+.number-input-group button:last-child { border-radius: 0 8px 8px 0; }
+.number-input-group button:hover { background: #d63b55; }
+
+.confirm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10,10,10,0.92);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  animation: fadeIn 0.2s ease;
+}
+
+.confirm-overlay.active { display: flex; }
+
+.confirm-box {
+  background: #1a1a2e;
+  border: 1px solid #e94560;
+  border-radius: 14px;
+  padding: 28px 24px;
+  text-align: center;
+  max-width: 340px;
+  width: 90%;
+}
+
+.confirm-box h3 { color: #fff; font-size: 1.05rem; margin-bottom: 8px; }
+.confirm-box p { color: #888; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.5; }
+.confirm-actions { display: flex; gap: 10px; }
+.confirm-actions .button { flex: 1; }
+
+.logo-mark { font-size: 2rem; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="screen-setup" class="screen">
+    <div class="logo-mark">⚡</div>
+    <h1>Shift Reporter</h1>
+    <p class="subtitle">Connect your Telegram bot to get started</p>
+
+    <label for="setup-token">Telegram Bot Token</label>
+    <input type="text" id="setup-token" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11" autocomplete="off">
+
+    <label for="setup-chatid">Telegram Chat ID</label>
+    <input type="text" id="setup-chatid" placeholder="-1001234567890" autocomplete="off">
+
+    <label for="setup-roster">Chatter Names (comma separated)</label>
+    <input type="text" id="setup-roster" placeholder="Alice, Bob, Charlie, Dana">
+
+    <label for="setup-target">Shift Revenue Target (USD, optional)</label>
+    <input type="number" id="setup-target" placeholder="500" min="0">
+
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="button button-secondary" style="flex:1;" onclick="testTelegram()">Test Connection</button>
+      <button class="button button-primary" style="flex:2;" onclick="saveSetup()">Save & Continue</button>
+    </div>
+  </div>
+
+  <div id="screen-login" class="screen">
+    <button class="gear-button" onclick="showScreen('setup')" title="Settings">⚙</button>
+    <div style="padding-top: 60px; text-align: center;">
+      <div class="logo-mark">⚡</div>
+      <h1>Shift Reporter</h1>
+      <p class="subtitle">Select your name and clock in to start</p>
+    </div>
+
+    <label for="login-chatter">Chatter</label>
+    <select id="login-chatter"></select>
+
+    <button class="button button-success" style="margin-top:8px;padding:16px;font-size:1.05rem;" onclick="clockIn()">Clock In</button>
+  </div>
+
+  <div id="screen-dashboard" class="screen" style="padding:0;">
+    <div class="header-bar">
+      <div>
+        <div class="chatter-name" id="dash-chatter-name"></div>
+        <div style="font-size:0.7rem;color:#666;">On shift</div>
+      </div>
+      <div class="shift-timer" id="dash-timer">00:00:00</div>
+      <button class="clock-out-button" onclick="confirmClockOut()">CLOCK OUT</button>
+    </div>
+
+    <div class="tab-nav">
+      <button class="tab-button active" data-tab="mm" onclick="switchTab('mm')">Mass Messages</button>
+      <button class="tab-button" data-tab="sales" onclick="switchTab('sales')">Sales</button>
+      <button class="tab-button" data-tab="stats" onclick="switchTab('stats')">Shift Stats</button>
+    </div>
+
+    <div id="tab-mm" class="tab-content active">
+      <label for="mm-caption">MM Caption</label>
+      <textarea id="mm-caption" rows="2" placeholder="Enter the mass message caption..."></textarea>
+
+      <label for="mm-slot">Time Slot</label>
+      <select id="mm-slot">
+        <option value="Shift 1 — 10:00 AM PHT / 9:00 PM EST">S1 — 10:00 AM PHT / 9:00 PM EST</option>
+        <option value="Shift 1 — 12:30 PM PHT / 11:30 PM EST">S1 — 12:30 PM PHT / 11:30 PM EST</option>
+        <option value="Shift 1 — 3:00 PM PHT / 2:00 AM EST">S1 — 3:00 PM PHT / 2:00 AM EST</option>
+        <option value="Shift 2 — 2:00 AM PHT / 1:00 PM EST">S2 — 2:00 AM PHT / 1:00 PM EST</option>
+        <option value="Shift 2 — 4:30 AM PHT / 3:30 PM EST">S2 — 4:30 AM PHT / 3:30 PM EST</option>
+        <option value="Shift 2 — 7:00 AM PHT / 6:00 PM EST">S2 — 7:00 AM PHT / 6:00 PM EST</option>
+        <option value="Shift 3 — 6:00 PM PHT / 5:00 AM EST">S3 — 6:00 PM PHT / 5:00 AM EST</option>
+        <option value="Shift 3 — 8:30 PM PHT / 7:30 AM EST">S3 — 8:30 PM PHT / 7:30 AM EST</option>
+        <option value="Shift 3 — 11:00 PM PHT / 10:00 AM EST">S3 — 11:00 PM PHT / 10:00 AM EST</option>
+      </select>
+
+      <button class="button button-primary" onclick="logMM()">Log MM 📨</button>
+
+      <div class="log-list" id="mm-list"></div>
+    </div>
+
+    <div id="tab-sales" class="tab-content">
+      <label for="sale-fan">Fan Username</label>
+      <input type="text" id="sale-fan" placeholder="@username">
+
+      <div class="input-row">
+        <div>
+          <label for="sale-amount">Amount (USD)</label>
+          <input type="number" id="sale-amount" placeholder="0.00" min="0" step="0.01">
+        </div>
+        <div>
+          <label>PPVs Bought</label>
+          <div class="number-input-group">
+            <button onclick="adjustPPV(-1)">−</button>
+            <input type="number" id="sale-ppv" value="1" min="1" max="99" readonly>
+            <button onclick="adjustPPV(1)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <label for="sale-notes">Notes (optional)</label>
+      <input type="text" id="sale-notes" placeholder="Any extra details...">
+
+      <button class="button button-primary" onclick="logSale()">Log Sale 💰</button>
+
+      <div class="log-list" id="sales-list"></div>
+    </div>
+
+    <div id="tab-stats" class="tab-content">
+      <div class="stat-grid" id="stats-grid"></div>
+      <div class="progress-bar-container" id="progress-container" style="display:none;">
+        <div class="progress-label">
+          <span class="current" id="progress-current">\$0</span>
+          <span class="target" id="progress-target">\$0</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confirm-overlay" class="confirm-overlay">
+    <div class="confirm-box">
+      <h3>End Shift?</h3>
+      <p>This will clock you out and send the shift summary to Telegram.</p>
+      <div class="confirm-actions">
+        <button class="button button-secondary" onclick="cancelClockOut()">Cancel</button>
+        <button class="button button-danger" onclick="clockOut()">Clock Out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  let config = {};
+  let shiftData = null;
+  let timerInterval = null;
+
+  function init() {
+    config = JSON.parse(localStorage.getItem('sr_config') || '{}');
+    const savedShift = localStorage.getItem('sr_shift');
+    if (savedShift) {
+      shiftData = JSON.parse(savedShift);
+      shiftData.clockIn = new Date(shiftData.clockIn);
+    }
+
+    if (shiftData) {
+      showScreen('dashboard');
+    } else if (config.token && config.chatId && config.roster && config.roster.length) {
+      showScreen('login');
+    } else {
+      showScreen('setup');
+    }
+  }
+
+  window.showScreen = function(name) {
+    document.querySelectorAll('.screen').forEach(function(screen) { screen.classList.remove('active'); });
+    document.getElementById('screen-' + name).classList.add('active');
+
+    if (name === 'setup') {
+      document.getElementById('setup-token').value = config.token || '';
+      document.getElementById('setup-chatid').value = config.chatId || '';
+      document.getElementById('setup-roster').value = (config.roster || []).join(', ');
+      document.getElementById('setup-target').value = config.target || '';
+    }
+
+    if (name === 'login') {
+      var sel = document.getElementById('login-chatter');
+      sel.innerHTML = '';
+      (config.roster || []).forEach(function(n) {
+        var opt = document.createElement('option');
+        opt.value = n;
+        opt.textContent = n;
+        sel.appendChild(opt);
+      });
+    }
+
+    if (name === 'dashboard') {
+      document.getElementById('dash-chatter-name').textContent = shiftData.chatter;
+      startTimer();
+      renderMMs();
+      renderSales();
+      renderStats();
+    } else {
+      stopTimer();
+    }
+  };
+
+  window.saveSetup = function() {
+    var token = document.getElementById('setup-token').value.trim();
+    var chatId = document.getElementById('setup-chatid').value.trim();
+    var rosterRaw = document.getElementById('setup-roster').value.trim();
+    var target = parseInt(document.getElementById('setup-target').value) || 0;
+
+    if (!token || !chatId || !rosterRaw) {
+      toast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    var roster = rosterRaw.split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+    if (roster.length === 0) {
+      toast('Add at least one chatter name', 'error');
+      return;
+    }
+
+    config = { token: token, chatId: chatId, roster: roster, target: target };
+    localStorage.setItem('sr_config', JSON.stringify(config));
+    toast('Settings saved!', 'success');
+    setTimeout(function() { showScreen('login'); }, 600);
+  };
+
+  window.testTelegram = function() {
+    var token = document.getElementById('setup-token').value.trim();
+    var chatId = document.getElementById('setup-chatid').value.trim();
+    if (!token || !chatId) {
+      toast('Enter token and chat ID first', 'error');
+      return;
+    }
+    sendTelegram(token, chatId, '✅ <b>Shift Reporter</b> — Connection test successful!').then(function(ok) {
+      if (ok) toast('Telegram connected!', 'success');
+      else toast('Failed — check token & chat ID', 'error');
+    });
+  };
+
+  window.clockIn = function() {
+    var chatter = document.getElementById('login-chatter').value;
+    if (!chatter) return;
+
+    var now = new Date();
+    shiftData = {
+      chatter: chatter,
+      clockIn: now,
+      mms: [],
+      sales: []
+    };
+    saveShift();
+
+    var timeStr = formatTimeEST(now);
+    sendTelegram(config.token, config.chatId,
+      '🟢 <b>' + chatter + '</b> clocked in\n⏰ Shift started at <b>' + timeStr + ' EST</b>'
+    );
+
+    toast(chatter + ' clocked in!', 'success');
+    showScreen('dashboard');
+  };
+
+  window.confirmClockOut = function() {
+    document.getElementById('confirm-overlay').classList.add('active');
+  };
+
+  window.cancelClockOut = function() {
+    document.getElementById('confirm-overlay').classList.remove('active');
+  };
+
+  window.clockOut = function() {
+    document.getElementById('confirm-overlay').classList.remove('active');
+    var now = new Date();
+    var duration = now - shiftData.clockIn;
+    var hours = Math.floor(duration / 3600000);
+    var minutes = Math.floor((duration % 3600000) / 60000);
+
+    var totalRev = shiftData.sales.reduce(function(s, x) { return s + x.amount; }, 0);
+    var totalPPV = shiftData.sales.reduce(function(s, x) { return s + x.ppvs; }, 0);
+    var salesCount = shiftData.sales.length;
+    var avgSale = salesCount > 0 ? (totalRev / salesCount).toFixed(2) : '0.00';
+    var avgPPV = salesCount > 0 ? (totalPPV / salesCount).toFixed(1) : '0';
+    var revPerHour = duration > 60000 ? (totalRev / (duration / 3600000)).toFixed(2) : '0.00';
+
+    var msg = '🔴 <b>' + shiftData.chatter + '</b> clocked out\n\n' +
+      '⏱ Shift Duration: <b>' + hours + 'h ' + minutes + 'm</b>\n' +
+      '💰 Total Revenue: <b>$' + totalRev.toFixed(2) + '</b>\n' +
+      '📊 Sales: <b>' + salesCount + '</b> | Avg Sale: <b>$' + avgSale + '</b>\n' +
+      '📦 PPVs Sold: <b>' + totalPPV + '</b> | Avg PPVs/Buyer: <b>' + avgPPV + '</b>\n' +
+      '📨 MMs Sent: <b>' + shiftData.mms.length + '</b>\n' +
+      '💵 Revenue/Hour: <b>$' + revPerHour + '</b>';
+
+    sendTelegram(config.token, config.chatId, msg);
+
+    toast('Shift ended — summary sent!', 'success');
+    shiftData = null;
+    localStorage.removeItem('sr_shift');
+    stopTimer();
+    setTimeout(function() { showScreen('login'); }, 800);
+  };
+
+  window.switchTab = function(tab) {
+    document.querySelectorAll('.tab-button').forEach(function(button) { button.classList.remove('active'); });
+    document.querySelector('.tab-button[data-tab="' + tab + '"]').classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(function(content) { content.classList.remove('active'); });
+    document.getElementById('tab-' + tab).classList.add('active');
+    if (tab === 'stats') renderStats();
+  };
+
+  window.logMM = function() {
+    var caption = document.getElementById('mm-caption').value.trim();
+    var slot = document.getElementById('mm-slot').value;
+    if (!caption) { toast('Enter a caption first', 'error'); return; }
+
+    var entry = { caption: caption, slot: slot, time: new Date().toISOString() };
+    shiftData.mms.push(entry);
+    saveShift();
+
+    var preview = caption.length > 60 ? caption.substring(0, 60) + '...' : caption;
+    sendTelegram(config.token, config.chatId,
+      '📨 <b>' + shiftData.chatter + '</b> sent MM\n📅 ' + slot + '\n💬 "<i>' + escapeHTML(preview) + '</i>"'
+    );
+
+    document.getElementById('mm-caption').value = '';
+    renderMMs();
+    toast('MM logged!', 'success');
+  };
+
+  window.logSale = function() {
+    var fan = document.getElementById('sale-fan').value.trim();
+    var amount = parseFloat(document.getElementById('sale-amount').value);
+    var ppvs = parseInt(document.getElementById('sale-ppv').value) || 1;
+    var notes = document.getElementById('sale-notes').value.trim();
+
+    if (!fan) { toast('Enter fan username', 'error'); return; }
+    if (!amount || amount <= 0) { toast('Enter a valid amount', 'error'); return; }
+
+    var entry = { fan: fan, amount: amount, ppvs: ppvs, notes: notes, time: new Date().toISOString() };
+    shiftData.sales.push(entry);
+    saveShift();
+
+    var timeStr = formatTimeEST(new Date());
+    var msg = '💰 <b>SALE!</b> ' + shiftData.chatter + '\n' +
+      '👤 Fan: <b>' + escapeHTML(fan) + '</b>\n' +
+      '💵 $' + amount.toFixed(2) + ' — ' + ppvs + ' PPV(s)\n' +
+      '🕐 ' + timeStr + ' EST';
+    if (notes) msg += '\n📝 ' + escapeHTML(notes);
+
+    sendTelegram(config.token, config.chatId, msg);
+
+    document.getElementById('sale-fan').value = '';
+    document.getElementById('sale-amount').value = '';
+    document.getElementById('sale-ppv').value = '1';
+    document.getElementById('sale-notes').value = '';
+    renderSales();
+    toast('Sale logged — $' + amount.toFixed(2), 'success');
+  };
+
+  window.adjustPPV = function(delta) {
+    var input = document.getElementById('sale-ppv');
+    var val = parseInt(input.value) + delta;
+    if (val < 1) val = 1;
+    if (val > 99) val = 99;
+    input.value = val;
+  };
+
+  function renderMMs() {
+    var container = document.getElementById('mm-list');
+    if (!shiftData || shiftData.mms.length === 0) {
+      container.innerHTML = '<div class="empty-state">No mass messages logged yet</div>';
+      return;
+    }
+    var html = '';
+    for (var i = shiftData.mms.length - 1; i >= 0; i--) {
+      var mm = shiftData.mms[i];
+      var t = new Date(mm.time);
+      html += '<div class="log-item">' +
+        '<div class="log-time">' + formatTimeShort(t) + ' — ' + mm.slot + '</div>' +
+        '<div class="log-main">' + escapeHTML(mm.caption) + '</div>' +
+        '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function renderSales() {
+    var container = document.getElementById('sales-list');
+    if (!shiftData || shiftData.sales.length === 0) {
+      container.innerHTML = '<div class="empty-state">No sales logged yet</div>';
+      return;
+    }
+    var html = '';
+    for (var i = shiftData.sales.length - 1; i >= 0; i--) {
+      var sale = shiftData.sales[i];
+      var t = new Date(sale.time);
+      html += '<div class="log-item">' +
+        '<div class="log-time">' + formatTimeShort(t) + '</div>' +
+        '<div class="log-main">' + escapeHTML(sale.fan) + ' — <span style="color:#e94560;font-weight:700;">$' + sale.amount.toFixed(2) + '</span> — ' + sale.ppvs + ' PPV(s)</div>' +
+        (sale.notes ? '<div class="log-detail">' + escapeHTML(sale.notes) + '</div>' : '') +
+        '</div>';
+    }
+    container.innerHTML = html;
+  }
+
+  function renderStats() {
+    if (!shiftData) return;
+
+    var totalRev = shiftData.sales.reduce(function(s, x) { return s + x.amount; }, 0);
+    var totalPPV = shiftData.sales.reduce(function(s, x) { return s + x.ppvs; }, 0);
+    var salesCount = shiftData.sales.length;
+    var avgSale = salesCount > 0 ? (totalRev / salesCount) : 0;
+    var avgPPV = salesCount > 0 ? (totalPPV / salesCount) : 0;
+    var duration = new Date() - shiftData.clockIn;
+    var revPerHour = duration > 60000 ? (totalRev / (duration / 3600000)) : 0;
+
+    var grid = document.getElementById('stats-grid');
+    grid.innerHTML =
+      '<div class="stat-card"><div class="stat-value accent">$' + totalRev.toFixed(2) + '</div><div class="stat-label">Total Revenue</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + salesCount + '</div><div class="stat-label">Total Sales</div></div>' +
+      '<div class="stat-card"><div class="stat-value">$' + avgSale.toFixed(2) + '</div><div class="stat-label">Avg Sale Value</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + totalPPV + '</div><div class="stat-label">PPVs Sold</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + avgPPV.toFixed(1) + '</div><div class="stat-label">Avg PPVs/Buyer</div></div>' +
+      '<div class="stat-card"><div class="stat-value">' + shiftData.mms.length + '</div><div class="stat-label">MMs Sent</div></div>' +
+      '<div class="stat-card wide"><div class="stat-value accent">$' + revPerHour.toFixed(2) + '<span style="font-size:0.7rem;color:#888;">/hr</span></div><div class="stat-label">Revenue Per Hour</div></div>';
+
+    var target = config.target || 0;
+    var progressContainer = document.getElementById('progress-container');
+    if (target > 0) {
+      progressContainer.style.display = 'block';
+      document.getElementById('progress-current').textContent = '$' + totalRev.toFixed(0);
+      document.getElementById('progress-target').textContent = 'Target: $' + target;
+      var pct = Math.min((totalRev / target) * 100, 100);
+      document.getElementById('progress-fill').style.width = pct + '%';
+    } else {
+      progressContainer.style.display = 'none';
+    }
+  }
+
+  function startTimer() {
+    stopTimer();
+    updateTimer();
+    timerInterval = setInterval(updateTimer, 1000);
+  }
+
+  function stopTimer() {
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  }
+
+  function updateTimer() {
+    if (!shiftData) return;
+    var diff = new Date() - shiftData.clockIn;
+    var h = Math.floor(diff / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+    document.getElementById('dash-timer').textContent =
+      pad(h) + ':' + pad(m) + ':' + pad(s);
+  }
+
+  function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+  function saveShift() {
+    if (shiftData) {
+      var toSave = JSON.parse(JSON.stringify(shiftData));
+      toSave.clockIn = shiftData.clockIn.toISOString();
+      localStorage.setItem('sr_shift', JSON.stringify(toSave));
+    }
+  }
+
+  function sendTelegram(token, chatId, text) {
+    var url = 'https://api.telegram.org/bot' + token + '/sendMessage';
+    return fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' })
+    }).then(function(response) {
+      return response.ok;
+    }).catch(function() {
+      toast('Telegram send failed — check connection', 'error');
+      return false;
+    });
+  }
+
+  function formatTimeEST(date) {
+    try {
+      return date.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', hour12: true });
+    } catch (e) {
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+  }
+
+  function formatTimeShort(date) {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+
+  function escapeHTML(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function toast(msg, type) {
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast' + (type ? ' ' + type : '');
+    setTimeout(function() { el.classList.add('show'); }, 10);
+    setTimeout(function() { el.classList.remove('show'); }, 2500);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
